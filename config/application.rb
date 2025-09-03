@@ -36,6 +36,10 @@ module Reef1000
     # config.time_zone = "Central Time (US & Canada)"
     # config.eager_load_paths << Rails.root.join("extras")
 
+    config.x.apex.fusion_username = ENV.fetch 'APEX_FUSION_USERNAME'
+    config.x.apex.fusion_password = ENV.fetch 'APEX_FUSION_PASSWORD'
+    config.x.apex.controller_id = ENV.fetch 'APEX_CONTROLLER_ID'
+
     # Don't generate system test files.
     config.generators.system_tests = nil
   end
