@@ -1,4 +1,15 @@
+plugins:
+  - rubocop-rails
+  - rubocop-rspec
+
 Style/MethodCallWithArgsParentheses:
   Enabled: true
   EnforcedStyle: omit_parentheses
   AllowParenthesesInMultilineCall: true
+
+Style/Documentation:
+  Enabled: false
+
+Metrics/BlockLength:
+  Exclude:
+    - 'spec/**/*'

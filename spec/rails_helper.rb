@@ -1,8 +1,10 @@
+# frozen_string_literal: true
+
 require 'spec_helper'
 
 ENV['RAILS_ENV'] ||= 'test'
 require_relative '../config/environment'
-abort("The Rails environment is running in production mode!") if Rails.env.production?
+abort 'The Rails environment is running in production mode!' if Rails.env.production?
 require 'rspec/rails'
 require 'webmock/rspec'
 
@@ -10,7 +12,7 @@ Rails.root.glob('spec/support/**/*.rb').sort_by(&:to_s).each { |f| require f }
 
 WebMock.disable_net_connect!(
   allow_localhost: true,
-  net_http_connect_on_start: true,
+  net_http_connect_on_start: true
 )
 
 begin
