@@ -21,7 +21,28 @@ extreme.
 
 **Apex integration** (`app/services/`):
 - `FusionAuthenticator` — logs into Apex Fusion (CSRF token dance + cookies).
-- `ApexStatusService` — pulls the live controller status snapshot.
+- `ApexClient` — shared HTTP-fetch base (auth cookies, base URL) so each
+  endpoint client isn't repeating the same five lines.
+- `ApexStatusService` — live status snapshot. Only used today to resolve the
+  kalk pump's power-probe `did`s by name (see `OutletPowerProbeResolver`
+  below) — not for any reading value itself.
+- `TridentLogService` / `IntervalLogService` — `tlog`/`ilog` history pulls.
+- `TridentMeasurementImporter` — parses `tlog`'s flat array into `Measurement`
+  rows (alk/ca/mg), via the shared `MeasurementWriter`.
+- `IntervalMeasurementImporter` — parses `ilog`'s per-timestamp `inputs`
+  array. Ships with `base_pH` mapped by default; `ApexScrapeJob` merges in
+  the kalk pump's amps/watts `did`s (resolved fresh each run, see below) as
+  `extra_probe_metrics`.
+- `OutletPowerProbeResolver` — resolves an outlet's amps/watts `did`s by
+  *name* (`"#{output_name}A"`/`"...W"`) against the live status snapshot,
+  rather than hardcoding a `did`. This matters because Apex auto-generates
+  an amps/watts probe pair for every outlet regardless of what's plugged in
+  — `4_P3`/`4_P11` are artifacts of this tank's current wiring, not stable
+  identifiers, and `ilog` entries only carry bare `did`s (no `name`), so the
+  live status snapshot is the only place the two are linked.
+- `ApexScrapeJob` — the actual recurring unit: pulls `tlog` + `ilog` +
+  (for probe resolution only) `status`, imports everything into
+  `Measurement`. Not yet wired to a schedule (`config/recurring.yml`).
 - Outlet **write** control (turning `kalkStirPump` on/off) is not
   implemented yet — the request shape hasn't been captured. Don't guess at
   it; it needs a devtools capture of a manual toggle in the Fusion UI.
@@ -113,6 +134,14 @@ API. `apexfusion.com`, all endpoints require the session cookies from
 - Both `ilog` and `tlog` are GET-only (POST returns 405) and require the
   `days` query param specifically by name — `start`/`end`/`from`/`to`/`date`
   all 400.
+- **`status` entries have both `did` and `name`; `ilog` entries have only
+  `did`.** The live snapshot is the only place a `did` (e.g. `4_P3`) is
+  linked to its human-readable name (e.g. `kalkStirPumpA`) — needed for
+  `OutletPowerProbeResolver` to resolve by name instead of hardcoding.
+- **Every outlet gets an auto-generated amps/watts probe pair** from Apex's
+  power modules regardless of what's plugged in — naming convention is
+  `"#{outlet_name}A"`/`"#{outlet_name}W"` (e.g. `kalkStirPumpA`/`...W`,
+  `RO_TO_DI_6A`/`...W`). Not something anyone configures; automatic.
 - **Not yet found:** the write/control endpoint for toggling an outlet.
 
 Real numbers observed 2026-08-18: alk trended down over ~36h (8.01 → 7.66 →
@@ -125,13 +154,29 @@ Real numbers observed 2026-08-18: alk trended down over ~36h (8.01 → 7.66 →
   manual process factors in the last ~3 readings (trend, not just current
   value) and the tank's pH — not finalized as an algorithm yet. Trident's
   spec'd accuracy is ±0.2 dKH; user's observed real-world noise is closer to
-  ±0.4 — relevant to picking a deadband, not yet decided.
-- Whether `ilog`'s free pH/temp history gets used for the pH-trend part of
-  the decision is plausible but undecided.
+  ±0.4 — relevant to picking a deadband, not yet decided. pH itself now
+  comes from `ilog` (`IntervalMeasurementImporter`) rather than the live
+  status snapshot, so pH history is already being captured — this was an
+  open question, now resolved and built.
+- **LLS (level sensor) for the RODI reservoir feeding the kalk stirrer —
+  not built yet, sensor isn't physically in place.** User has one LLS,
+  currently in the sump (`did` `5_P3`, name `TZ_LLS` as of 2026-08-18) but
+  too much splashing there for a clean reading; plans to move it to the RODI
+  reservoir that feeds the kalk stirrer. An empty reservoir is a real reason
+  *not* to run the pump (dry-running it), so this is a genuine decision
+  input, not just a nice-to-have. Moving the sensor doesn't change its
+  `did` (that's tied to the module port, not what it's measuring) but will
+  likely come with a rename in the Apex UI to reflect the new job — so this
+  should follow the exact same pattern as `OutletPowerProbeResolver`:
+  resolve by a configured name against the live status snapshot, never
+  hardcode the `did`. Hold off building this until the physical move
+  actually happens — no way to verify units/plausible ranges (what "empty
+  reservoir" reads as) against a sensor that isn't there yet.
 
 ## Running locally
 
-- Apex credentials live in a local `.env` (gitignored, never commit):
-  `APEX_FUSION_USERNAME`, `APEX_FUSION_PASSWORD`, `APEX_CONTROLLER_ID`.
+- Apex credentials/config live in a local `.env` (gitignored, never commit):
+  `APEX_FUSION_USERNAME`, `APEX_FUSION_PASSWORD`, `APEX_CONTROLLER_ID`,
+  `APEX_KALK_PUMP_OUTPUT_NAME`.
 - Two Postgres databases required (`primary` + `queue`,
   `config/database.yml`) — `bin/rails db:prepare` sets both up.
