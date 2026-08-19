@@ -2,7 +2,7 @@
 
 class ApexScrapeJob < ApplicationJob
   def perform
-    MeasurementImporter.import_trident_log TridentLogService.log
-    MeasurementImporter.import_status ApexStatusService.status
+    TridentMeasurementImporter.import TridentLogService.log
+    IntervalMeasurementImporter.import IntervalLogService.log
   end
 end
