@@ -40,4 +40,16 @@ RSpec.describe IntervalMeasurementImporter do
       expect { described_class.import('not json') }.not_to raise_error
     end
   end
+
+  describe '.import with extra_probe_metrics' do
+    let :log_json do
+      [{ 'date' => '2026-08-18T13:20:00.000Z', 'inputs' => [{ 'did' => '4_P3', 'value' => 0.3 }] }].to_json
+    end
+
+    before { described_class.import log_json, extra_probe_metrics: { '4_P3' => 'kalk_pump_amps' } }
+
+    it 'imports a did that is only known through the extra mapping' do
+      expect(Measurement.first).to have_attributes(metric: 'kalk_pump_amps', probe_id: '4_P3', value: 0.3)
+    end
+  end
 end

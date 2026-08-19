@@ -39,10 +39,9 @@ module Reef1000
     config.x.apex.fusion_username = ENV.fetch 'APEX_FUSION_USERNAME'
     config.x.apex.fusion_password = ENV.fetch 'APEX_FUSION_PASSWORD'
     config.x.apex.controller_id = ENV.fetch 'APEX_CONTROLLER_ID'
+    config.x.apex.kalk_pump_output_name = ENV.fetch 'APEX_KALK_PUMP_OUTPUT_NAME'
 
     config.active_job.queue_adapter = :solid_queue
-    # Solid Queue's tables live in their own `queue` database (config/database.yml),
-    # separate from the app's `primary` database.
     config.solid_queue.connects_to = { database: { writing: :queue } }
 
     # Don't generate system test files.
