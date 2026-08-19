@@ -1,28 +1,11 @@
-class ApexStatusService
+# frozen_string_literal: true
 
-  def self.get_status
-    new.get_status
+class ApexStatusService < ApexClient
+  def self.status
+    new.status
   end
 
-  def initialize
-    @cookies = FusionAuthenticator.authenticate
+  def status
+    get base_path
   end
-
-  def get_status
-    HTTP.timeout(30)
-      .follow
-      .cookies(cookies)
-      .get(status_path)
-      .body
-      .to_s
-  end
-
-  private
-
-  attr_reader :cookies
-
-  def status_path
-    "https://apexfusion.com/api/apex/#{Rails.application.config.x.apex.controller_id}"
-  end
-
 end

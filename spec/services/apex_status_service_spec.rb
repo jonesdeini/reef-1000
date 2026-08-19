@@ -1,31 +1,35 @@
+# frozen_string_literal: true
+
 require 'rails_helper'
 
 RSpec.describe ApexStatusService do
-  describe '.get_status' do
+  describe '.status' do
     let(:cookies) { [HTTP::Cookie.new('connect.sid', 'test-session', domain: 'apexfusion.com')] }
     let(:tank_status_json) { { 'status' => { 'inputs' => [{ 'type' => 'alk', 'value' => 8.5 }] } }.to_json }
+    let(:status_url) { "https://apexfusion.com/api/apex/#{Rails.application.config.x.apex.controller_id}" }
 
     before do
       allow(FusionAuthenticator).to receive(:authenticate).and_return cookies
     end
 
-    it 'authenticates and returns tank status JSON' do
-      stub_request(:get, "https://apexfusion.com/api/apex/#{Rails.application.config.x.apex.controller_id}")
-        .to_return status: 200, body: tank_status_json
+    context 'when the request succeeds' do
+      before { stub_request(:get, status_url).to_return status: 200, body: tank_status_json }
 
-      result = described_class.get_status
+      it 'authenticates first' do
+        described_class.status
 
-      expect(FusionAuthenticator).to have_received(:authenticate)
-      expect(result).to eq(tank_status_json)
+        expect(FusionAuthenticator).to have_received(:authenticate)
+      end
+
+      it 'returns the tank status JSON' do
+        expect(described_class.status).to eq(tank_status_json)
+      end
     end
 
-    it 'handles API errors gracefully' do
-      stub_request(:get, "https://apexfusion.com/api/apex/#{Rails.application.config.x.apex.controller_id}")
-        .to_return status: 500, body: 'Server Error'
+    it 'returns the raw body rather than raising on an API error' do
+      stub_request(:get, status_url).to_return status: 500, body: 'Server Error'
 
-      result = described_class.get_status
-
-      expect(result).to eq('Server Error')
+      expect(described_class.status).to eq('Server Error')
     end
   end
 end
