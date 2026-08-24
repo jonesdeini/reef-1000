@@ -1,0 +1,62 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: reef_1000
+      POSTGRES_PASSWORD: ${REEF_1000_DATABASE_PASSWORD}
+      POSTGRES_DB: reef_1000_production
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init-queue-db.sh:/docker-entrypoint-initdb.d/init-queue-db.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U reef_1000 -d reef_1000_production"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    image: ghcr.io/jonesdeini/reef-1000:latest
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    environment: &app_env
+      PGHOST: postgres
+      RAILS_MASTER_KEY: ${RAILS_MASTER_KEY}
+      REEF_1000_DATABASE_PASSWORD: ${REEF_1000_DATABASE_PASSWORD}
+      APEX_FUSION_USERNAME: ${APEX_FUSION_USERNAME}
+      APEX_FUSION_PASSWORD: ${APEX_FUSION_PASSWORD}
+      APEX_CONTROLLER_ID: ${APEX_CONTROLLER_ID}
+      APEX_KALK_PUMP_OUTPUT_NAME: ${APEX_KALK_PUMP_OUTPUT_NAME}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/up"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  jobs:
+    image: ghcr.io/jonesdeini/reef-1000:latest
+    restart: unless-stopped
+    command: bin/jobs
+    depends_on:
+      web:
+        condition: service_healthy
+    environment: *app_env
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  watchtower:
+    image: containrrr/watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      WATCHTOWER_LABEL_ENABLE: "true"
+      WATCHTOWER_POLL_INTERVAL: "300"
+      WATCHTOWER_CLEANUP: "true"

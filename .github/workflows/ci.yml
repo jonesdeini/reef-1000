@@ -3,7 +3,7 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [ develop ]
+    branches: [ develop, main ]
 
 jobs:
   scan_ruby:
@@ -70,3 +70,28 @@ jobs:
 
       - name: Run tests
         run: bundle exec rspec
+
+  build_and_push:
+    needs: [ scan_ruby, lint, test ]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/${{ github.repository }}:latest

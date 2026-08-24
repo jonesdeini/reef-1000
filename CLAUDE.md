@@ -180,3 +180,41 @@ Real numbers observed 2026-08-18: alk trended down over ~36h (8.01 → 7.66 →
   `APEX_KALK_PUMP_OUTPUT_NAME`.
 - Two Postgres databases required (`primary` + `queue`,
   `config/database.yml`) — `bin/rails db:prepare` sets both up.
+
+## Deploying
+
+Runs on a home Unraid box via `docker-compose.yml` (single Postgres container
+holding both the `primary` and `queue` databases as separate logical DBs —
+same "defer the two-instance split to actual k8s work" reasoning as the
+Solid Queue database choice above), managed through the Compose Manager
+Plus plugin using its "Indirect Path" option pointing at this repo checked
+out on the array (not the plugin's own default projects folder, which lives
+on the boot USB, not the array — no room/durability for a real app there).
+
+**Deploy is poll-based, not push-triggered, by deliberate choice:**
+`.github/workflows/ci.yml`'s `build_and_push` job builds and pushes the app
+image to GHCR (`ghcr.io/jonesdeini/reef-1000:latest`) on every push to
+`main`, gated on the existing `scan_ruby`/`lint`/`test` jobs passing first.
+A Watchtower service in `docker-compose.yml` (scoped via
+`com.centurylinklabs.watchtower.enable` labels to just the `web`/`jobs`
+containers, not anything else running on the box) polls GHCR every 5 min
+and recreates them when a new image lands.
+
+Rejected alternatives, and why:
+- **Self-hosted GitHub Actions runner on the box**, triggered instantly on
+  push — would give GitHub Actions (any workflow run, any dependency in it)
+  local execution access to the NAS. Poll-based means the box only ever
+  does an outbound `docker pull`; GitHub never executes anything on it.
+- **Kamal**, deploying over SSH from CI — doesn't avoid the same tradeoff,
+  just reshapes it: a GitHub-hosted runner still needs a path *into* the
+  LAN to reach the box's SSH port (open port, or a VPN tunnel like the
+  Tailscale GitHub Action), which is new exposure/infra either way.
+
+Neither the box nor the deploy needs any inbound access or port-forwarding
+— everything is the box reaching out (`docker pull` from GHCR), same trust
+level as any container image update.
+
+GHCR package visibility isn't assumed to be public — `docker login ghcr.io`
+once on the Unraid host (a PAT with `read:packages`) covers both the
+initial `docker compose up` pull and Watchtower's ongoing polling, and
+works the same whether the package ends up public or private.
