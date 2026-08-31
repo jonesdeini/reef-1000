@@ -42,7 +42,8 @@ extreme.
   live status snapshot is the only place the two are linked.
 - `ApexScrapeJob` — the actual recurring unit: pulls `tlog` + `ilog` +
   (for probe resolution only) `status`, imports everything into
-  `Measurement`. Not yet wired to a schedule (`config/recurring.yml`).
+  `Measurement`. Scheduled via `config/recurring.yml`, an hour after each
+  expected Trident test.
 - Outlet **write** control (turning `kalkStirPump` on/off) is not
   implemented yet — the request shape hasn't been captured. Don't guess at
   it; it needs a devtools capture of a manual toggle in the Fusion UI.
