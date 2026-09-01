@@ -96,10 +96,8 @@ production:
     <<: *default
     database: reef_1000_production
     username: reef_1000
-    password: <%= ENV["REEF_1000_DATABASE_PASSWORD"] %>
   queue:
     <<: *default
     database: reef_1000_production_queue
     username: reef_1000
-    password: <%= ENV["REEF_1000_DATABASE_PASSWORD"] %>
     migrations_paths: db/queue_migrate

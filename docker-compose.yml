@@ -4,8 +4,8 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: reef_1000
-      POSTGRES_PASSWORD: ${REEF_1000_DATABASE_PASSWORD}
       POSTGRES_DB: reef_1000_production
+      POSTGRES_HOST_AUTH_METHOD: trust
     volumes:
       - ./postgres_data:/var/lib/postgresql/data
       - ./docker/postgres/init-queue-db.sh:/docker-entrypoint-initdb.d/init-queue-db.sh:ro
@@ -26,7 +26,6 @@ services:
     environment: &app_env
       PGHOST: postgres
       RAILS_MASTER_KEY: ${RAILS_MASTER_KEY}
-      REEF_1000_DATABASE_PASSWORD: ${REEF_1000_DATABASE_PASSWORD}
       APEX_FUSION_USERNAME: ${APEX_FUSION_USERNAME}
       APEX_FUSION_PASSWORD: ${APEX_FUSION_PASSWORD}
       APEX_CONTROLLER_ID: ${APEX_CONTROLLER_ID}
