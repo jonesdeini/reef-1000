@@ -49,6 +49,8 @@ services:
   updater:
     image: docker:cli
     restart: unless-stopped
+    environment:
+      COMPOSE_PROJECT_NAME: reef-1000
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - .:/app
