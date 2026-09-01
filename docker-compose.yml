@@ -53,7 +53,7 @@ services:
       COMPOSE_PROJECT_NAME: reef-1000
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - .:/app
-    working_dir: /app
+      - /mnt/user/reefff/reef-1000:/mnt/user/reefff/reef-1000
+    working_dir: /mnt/user/reefff/reef-1000
     entrypoint: sh
     command: -c 'while true; do docker compose pull --quiet && docker compose up -d && docker image prune -f; sleep 300; done'
