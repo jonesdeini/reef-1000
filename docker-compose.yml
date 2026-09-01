@@ -36,8 +36,6 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
-    labels:
-      - "com.centurylinklabs.watchtower.enable=true"
 
   jobs:
     image: ghcr.io/jonesdeini/reef-1000:latest
@@ -47,15 +45,13 @@ services:
       web:
         condition: service_healthy
     environment: *app_env
-    labels:
-      - "com.centurylinklabs.watchtower.enable=true"
 
-  watchtower:
-    image: containrrr/watchtower
+  updater:
+    image: docker:cli
     restart: unless-stopped
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    environment:
-      WATCHTOWER_LABEL_ENABLE: "true"
-      WATCHTOWER_POLL_INTERVAL: "300"
-      WATCHTOWER_CLEANUP: "true"
+      - .:/app
+    working_dir: /app
+    entrypoint: sh
+    command: -c 'while true; do docker compose pull --quiet && docker compose up -d && docker image prune -f; sleep 300; done'

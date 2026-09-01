@@ -196,10 +196,12 @@ on the boot USB, not the array — no room/durability for a real app there).
 `.github/workflows/ci.yml`'s `build_and_push` job builds and pushes the app
 image to GHCR (`ghcr.io/jonesdeini/reef-1000:latest`) on every push to
 `main`, gated on the existing `scan_ruby`/`lint`/`test` jobs passing first.
-A Watchtower service in `docker-compose.yml` (scoped via
-`com.centurylinklabs.watchtower.enable` labels to just the `web`/`jobs`
-containers, not anything else running on the box) polls GHCR every 5 min
-and recreates them when a new image lands.
+An `updater` service in `docker-compose.yml` — a plain `docker:cli` image
+looping `docker compose pull && docker compose up -d` every 5 min, with
+`docker.sock` mounted — polls GHCR and recreates `web`/`jobs`/`postgres`
+when a new image actually lands. `docker compose up -d` only recreates a
+container whose pulled image digest changed, so this is a safe no-op most
+of the time.
 
 Rejected alternatives, and why:
 - **Self-hosted GitHub Actions runner on the box**, triggered instantly on
@@ -209,7 +211,19 @@ Rejected alternatives, and why:
 - **Kamal**, deploying over SSH from CI — doesn't avoid the same tradeoff,
   just reshapes it: a GitHub-hosted runner still needs a path *into* the
   LAN to reach the box's SSH port (open port, or a VPN tunnel like the
-  Tailscale GitHub Action), which is new exposure/infra either way.
+  Tailscale GitHub Action), which is new exposure/infra either way. It's
+  also push-only with no polling/auto-update mode of its own, so it doesn't
+  even address the same need.
+- **Watchtower**, used originally for the polling piece — upstream
+  (`containrrr/watchtower`) was archived Dec 2025, maintainers explicitly
+  declined to endorse any fork ("a few of the active forks... are full of
+  AI slop"), and its last image predates the Docker Engine API version
+  running on this box. `docker.sock` access is unavoidable for anything
+  that restarts containers on a schedule, whether that's a container or a
+  host cron job — the actual problem was trusting a third party's
+  unmaintained code with that access, not the access itself. `updater` is
+  the same few lines we'd have needed anyway, just ours instead of a
+  fork's.
 
 Neither the box nor the deploy needs any inbound access or port-forwarding
 — everything is the box reaching out (`docker pull` from GHCR), same trust
@@ -217,5 +231,5 @@ level as any container image update.
 
 GHCR package visibility isn't assumed to be public — `docker login ghcr.io`
 once on the Unraid host (a PAT with `read:packages`) covers both the
-initial `docker compose up` pull and Watchtower's ongoing polling, and
-works the same whether the package ends up public or private.
+initial `docker compose up` pull and the `updater` service's ongoing
+polling, and works the same whether the package ends up public or private.
