@@ -1,6 +1,5 @@
 plugins:
   - rubocop-rails
-  - rubocop-rspec
 
 Style/MethodCallWithArgsParentheses:
   Enabled: true
@@ -12,4 +11,4 @@ Style/Documentation:
 
 Metrics/BlockLength:
   Exclude:
-    - 'spec/**/*'
+    - 'test/**/*'
