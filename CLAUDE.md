@@ -17,6 +17,38 @@ counter-pull is to also avoid *under*-building (e.g. hardcoding a value that
 obviously wants to be config) — aim for tasteful middle ground, not either
 extreme.
 
+**The #1 motivating failure mode, the thing this app most needs to fix:**
+the kalk stirrer's pump is *ideally* on effectively 24/7 — the drip rate
+(not on/off) is the thing that's actually tuned, and neither the drip rate
+nor the solution's current saturation is sensed/measured by anything this
+app can see. When the reservoir runs low, refilling it with kalk powder
+temporarily lowers the solution's saturation (freshly-added powder hasn't
+fully dissolved yet), so the correct response is to *increase* the drip
+rate/duration to compensate — and this whole process is imprecise (how much
+usable kalk ends up in solution, drip rate, scoop size all vary batch to
+batch), so the user needs to babysit and hand-adjust the drip over the
+following day(s) as the solution approaches full saturation again. The
+recurring failure: forgetting to dial the drip back down once the solution
+reaches full strength, so the tank keeps taking a high dose of an
+increasingly-saturated solution well past when it should have been throttled
+back. This has happened more than once. A concrete, data-confirmed instance:
+2026-08-25 ~2:20 PM ET → 2026-08-27 ~2:20 AM ET (~36h, right after a
+refill), alk climbed steadily the whole window (7.17 → 7.36 → 7.56 → 7.81
+dKH) while the pump ran almost continuously in `ilog`.
+
+**Important, and easy to get wrong (an earlier version of this doc did):**
+the pump reading "on" for many hours is *not itself* an anomaly signal —
+that's the intended normal baseline, so a max-on-duration/"pump has been on
+too long" check would false-positive constantly and isn't the right fix
+here. Alk value/trend is the only thing actually sensed that reflects the
+real risk factor (drip rate × solution saturation, neither measured
+directly) — the fix has to be an alk-trend check over a long-enough window
+(hours, not a single reading), not a pump-runtime ceiling. (A *separate*,
+genuinely independent hard-ceiling principle below still has its own
+justification — decision-logic-independent bounds are good practice
+regardless — it just isn't motivated by *this* specific incident the way an
+earlier version of this note claimed.)
+
 ## Architecture
 
 **Apex integration** (`app/services/`):
@@ -77,6 +109,16 @@ policy change against a month of data) has to come from our own copy.
 **Safety principles for the decision boundary** — this system can dose a
 real tank, so the seam between "raw Apex response" and "decision logic" is
 the highest-stakes part of the codebase:
+- **Turning the pump off is low-stakes; turning it on is not.** An
+  erroneous "off" just pauses dosing a bit early — cheap, easily correctable
+  (ideally you'd also get notified when it happens, but notification itself
+  is a future side quest, not a reason to hold up anything here). An
+  erroneous "on" can genuinely overdose the tank or run a pump dry against
+  an empty reservoir. This asymmetry should weight everything downstream of
+  it: act liberally/quickly on the off-path, reserve the highest evidence
+  bar for the on-path. It's the actual reasoning behind scoping the first
+  pass to off-only, and behind planning a much stricter evidence bar for a
+  future "seems low, turn it on" trigger than for "seems high, turn it off."
 - Ambiguous/missing/out-of-plausible-range data must resolve to **no-op**,
   never to an action. An action requires an affirmatively good signal.
 - Use the `confidence` field on Trident readings (see below) — don't let a
@@ -88,7 +130,12 @@ the highest-stakes part of the codebase:
 - Keep a hard ceiling independent of decision-logic correctness — e.g. the
   pump should never be allowed to stay in the "on" state for more than N
   hours without a fresh confirming reading, regardless of what the decision
-  code thinks it's doing.
+  code thinks it's doing. Note this is *not* a fix for the #1 motivating
+  failure mode under "Current scope" above — the pump running for many
+  hours is that scenario's normal baseline, so a max-on-duration check
+  would false-positive constantly there. This principle stands on its own
+  (decision-logic-independent bounds are good practice regardless), it just
+  isn't motivated by that specific incident.
 - Test the parsing/mapping boundary against real captured payloads (see
   below), not idealized JSON.
 
