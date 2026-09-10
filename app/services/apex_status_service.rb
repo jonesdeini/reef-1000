@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 class ApexStatusService < ApexClient
+
   def self.status
     new.status
   end
@@ -8,4 +9,5 @@ class ApexStatusService < ApexClient
   def status
     get base_path
   end
+
 end

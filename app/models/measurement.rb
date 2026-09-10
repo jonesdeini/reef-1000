@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 class Measurement < ApplicationRecord
+
   ALK = 'alk'
   CA = 'ca'
   MG = 'mg'
@@ -32,4 +33,5 @@ class Measurement < ApplicationRecord
 
     errors.add :value, "is outside the plausible range for #{metric}" unless range.cover? value
   end
+
 end

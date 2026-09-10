@@ -3,6 +3,7 @@
 require 'http'
 
 class FusionAuthenticator
+
   FUSION_PATH = 'https://apexfusion.com'
 
   def self.authenticate
@@ -47,4 +48,5 @@ class FusionAuthenticator
     match = html.match(/name="csrf-token" content="([^"]+)"/)
     match ? match[1] : nil
   end
+
 end

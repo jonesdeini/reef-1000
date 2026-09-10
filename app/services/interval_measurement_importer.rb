@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 class IntervalMeasurementImporter
+
   DEFAULT_PROBE_METRICS = {
     'base_pH' => Measurement::PH
   }.freeze
@@ -33,4 +34,5 @@ class IntervalMeasurementImporter
 
     MeasurementWriter.write metric: metric, probe_id: input['did'], value: input['value'], recorded_at: date
   end
+
 end
