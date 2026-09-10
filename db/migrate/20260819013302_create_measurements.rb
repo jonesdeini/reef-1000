@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 class CreateMeasurements < ActiveRecord::Migration[8.0]
+
   def change
     create_table :measurements do |t|
       t.string :metric, null: false
@@ -15,4 +16,5 @@ class CreateMeasurements < ActiveRecord::Migration[8.0]
     add_index :measurements, %i[probe_id recorded_at], unique: true
     add_index :measurements, %i[metric recorded_at]
   end
+
 end

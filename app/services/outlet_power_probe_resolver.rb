@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 class OutletPowerProbeResolver
+
   def self.resolve(status_json, output_name, amps_metric:, watts_metric:)
     new(status_json).resolve output_name, amps_metric: amps_metric, watts_metric: watts_metric
   end
@@ -25,4 +26,5 @@ class OutletPowerProbeResolver
   def find_did(name)
     inputs.find { |input| input['name'] == name }&.dig('did')
   end
+
 end

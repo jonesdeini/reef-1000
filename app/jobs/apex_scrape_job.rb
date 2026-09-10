@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 class ApexScrapeJob < ApplicationJob
+
   def perform
     TridentMeasurementImporter.import TridentLogService.log
     IntervalMeasurementImporter.import IntervalLogService.log, extra_probe_metrics: kalk_pump_probe_metrics
@@ -16,4 +17,5 @@ class ApexScrapeJob < ApplicationJob
       watts_metric: Measurement::KALK_PUMP_WATTS
     )
   end
+
 end
