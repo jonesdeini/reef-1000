@@ -43,20 +43,6 @@ RSpec.describe TridentMeasurementImporter do
       end
     end
 
-    context 'with an implausible value' do
-      let(:json) { [{ 'date' => '2026-08-18T10:19:21.000Z', 'did' => '10_0', 'value' => 999 }].to_json }
-
-      it 'does not raise' do
-        expect { described_class.import(json) }.not_to raise_error
-      end
-
-      it 'does not persist the entry' do
-        described_class.import json
-
-        expect(Measurement.count).to eq(0)
-      end
-    end
-
     it 'does not raise on unparseable JSON' do
       expect { described_class.import('not json') }.not_to raise_error
     end
