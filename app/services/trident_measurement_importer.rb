@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 class TridentMeasurementImporter
+
   PROBE_METRICS = {
     '10_0' => Measurement::ALK,
     '10_1' => Measurement::CA,
@@ -31,4 +32,5 @@ class TridentMeasurementImporter
       recorded_at: entry['date']
     )
   end
+
 end

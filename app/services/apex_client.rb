@@ -3,6 +3,7 @@
 require 'http'
 
 class ApexClient
+
   def initialize
     @cookies = FusionAuthenticator.authenticate
   end
@@ -23,4 +24,5 @@ class ApexClient
   def base_path
     "https://apexfusion.com/api/apex/#{Rails.application.config.x.apex.controller_id}"
   end
+
 end

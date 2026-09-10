@@ -22,6 +22,7 @@ Bundler.require(*Rails.groups)
 
 module Reef1000
   class Application < Rails::Application
+
     # Initialize configuration defaults for originally generated Rails version.
     config.load_defaults 8.0
 
@@ -48,5 +49,6 @@ module Reef1000
 
     # Don't generate system test files.
     config.generators.system_tests = nil
+
   end
 end
