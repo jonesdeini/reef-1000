@@ -10,6 +10,7 @@ RSpec.describe ApexScrapeJob do
     allow(OutletPowerProbeResolver).to receive(:resolve).and_return('4_P3' => Measurement::KALK_PUMP_AMPS)
     allow(TridentMeasurementImporter).to receive(:import)
     allow(IntervalMeasurementImporter).to receive(:import)
+    allow(AlkWatchdogJob).to receive(:perform_later)
 
     described_class.perform_now
   end
@@ -30,5 +31,9 @@ RSpec.describe ApexScrapeJob do
       'interval-log-json',
       extra_probe_metrics: { '4_P3' => Measurement::KALK_PUMP_AMPS }
     )
+  end
+
+  it 'enqueues the alk watchdog job after a successful scrape' do
+    expect(AlkWatchdogJob).to have_received(:perform_later)
   end
 end

@@ -11,8 +11,8 @@ class Measurement < ApplicationRecord
 
   PLAUSIBLE_ALK_RANGE = 5..15
 
-  has_many :decisions_measurements, dependent: :destroy
-  has_many :decisions, through: :decisions_measurements
+  has_many :trends_measurements, dependent: :destroy
+  has_many :trends, through: :trends_measurements
 
   validates :metric, :probe_id, :value, :recorded_at, presence: true
   validates :probe_id, uniqueness: { scope: :recorded_at }
