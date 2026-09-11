@@ -16,8 +16,20 @@ production:
   apex_scrape:
     class: ApexScrapeJob
     schedule: "0 1,4,7,10,13,16,19,22 * * *"
+  execute_actions:
+    class: ActionExecutorJob
+    schedule: every minute
+  alk_watchdog:
+    class: AlkWatchdogJob
+    schedule: "45 1,4,7,10,13,16,19,22 * * *"
 
 development:
   apex_scrape:
     class: ApexScrapeJob
     schedule: "0 1,4,7,10,13,16,19,22 * * *"
+  execute_actions:
+    class: ActionExecutorJob
+    schedule: every minute
+  alk_watchdog:
+    class: AlkWatchdogJob
+    schedule: "45 1,4,7,10,13,16,19,22 * * *"
