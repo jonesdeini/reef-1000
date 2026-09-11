@@ -15,7 +15,7 @@ RSpec.describe ActionExecutor do
     it 'logs the action' do
       logged = nil
       allow(Rails.logger).to receive(:info) { |&block| logged = block.call }
-      create :decision, action: { 'pump' => 'off' }, executed_at: nil
+      create :decision, actions: [{ 'pump' => 'off' }], executed_at: nil
 
       described_class.call
 
@@ -24,6 +24,12 @@ RSpec.describe ActionExecutor do
 
     it 'leaves already-executed decisions untouched' do
       decision = create :decision, executed_at: 1.day.ago
+
+      expect { described_class.call }.not_to(change { decision.reload.executed_at })
+    end
+
+    it 'leaves undecidable decisions untouched' do
+      decision = create :decision, executed_at: nil, undecidable_reason: 'insufficient_measurements'
 
       expect { described_class.call }.not_to(change { decision.reload.executed_at })
     end

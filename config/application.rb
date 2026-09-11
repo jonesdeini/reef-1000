@@ -43,6 +43,9 @@ module Reef1000
     config.x.apex.fusion_password = ENV.fetch 'APEX_FUSION_PASSWORD'
     config.x.apex.controller_id = ENV.fetch 'APEX_CONTROLLER_ID'
     config.x.apex.kalk_pump_output_name = ENV.fetch 'APEX_KALK_PUMP_OUTPUT_NAME'
+    config.x.apex.alk_slope_threshold = ENV.fetch('APEX_ALK_SLOPE_THRESHOLD', '0.02').to_f
+    config.x.apex.alk_r_squared_threshold = ENV.fetch('APEX_ALK_R_SQUARED_THRESHOLD', '0.5').to_f
+    config.x.apex.alk_staleness_threshold = ENV.fetch('APEX_ALK_STALENESS_THRESHOLD_HOURS', '2').to_i.hours
 
     config.active_job.queue_adapter = :solid_queue
     config.solid_queue.connects_to = { database: { writing: :queue } }
