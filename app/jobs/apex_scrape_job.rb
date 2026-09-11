@@ -5,6 +5,7 @@ class ApexScrapeJob < ApplicationJob
   def perform
     TridentMeasurementImporter.import TridentLogService.log
     IntervalMeasurementImporter.import IntervalLogService.log, extra_probe_metrics: kalk_pump_probe_metrics
+    AlkWatchdogJob.perform_later
   end
 
   private

@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 FactoryBot.define do
-  factory :decision do
-    actions { [] }
+  factory :trends_measurement do
+    trend
+    measurement
   end
 end
