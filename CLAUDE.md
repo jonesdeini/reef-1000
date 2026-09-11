@@ -120,6 +120,60 @@ API. `apexfusion.com`, all endpoints require the session cookies from
   `10_2`=mg), main pH probe is `base_pH`. The kalk stirrer's dosing pump is
   output `ID 16`, `name: "kalkStirPump"`, `type: "outlet"` — found by
   grepping the live outputs list, not guessed.
+- **The Trident's calibration date is in the live status payload after
+  all** — found 2026-09-10 by re-grepping the full payload instead of just
+  its top-level fields. It's nested inside the hardware block for the
+  Trident module: `status.modules[]` where `abaddr: 10` /
+  `hwtype: "TRI"` (this is the same module whose `config.modules[]`
+  counterpart is named `TRI_10`), under `.extra.lastCal` — a Unix epoch
+  **seconds** timestamp (e.g. `1788470668` → 2026-09-03 21:24:28 UTC).
+  **Confirmed against our own persisted data, not just decoded in
+  isolation:** the two `Measurement`s straddling that exact timestamp are
+  6 seconds apart (21:24:23 → 21:24:29) and show a stark value
+  discontinuity, 8.5 → 8.13 dKH — and the live `targetAlk` in
+  `config.modules` right now reads 8.13, matching the post-cal value
+  exactly. This is almost certainly the origin of the already-documented
+  "Sept 3 calibration/reagent-change artifact." Same object also carries
+  `.extra.resetTime`, an array of up to 5 epoch timestamps (unused slots
+  hold the epoch placeholder `820454400` / 1996-01-01, not `0` or `null`)
+  — likely a reagent-reset log: the *writable* counterpart,
+  `config.modules[]` (`TRI_10`) `.extra.reset`, is also exactly 5
+  booleans, a structural match beyond just the date coincidence. Softer
+  confirmation here too: the two later non-placeholder `resetTime` values
+  (2026-09-01 02:08:06, 2026-09-03 13:05:14) both straddle a reading gap
+  of ~204 min, vs. the ~174.6 min median gap across the full history —
+  +17%, consistent with (not proof of) an extra re-prime step. The
+  earliest slot (2026-08-25 18:19:11, right at the start of the real
+  incident window) can't be checked this way — it's *before* our own
+  history starts. Which of the 5 `reset` slots maps to which physical
+  reagent (alk/ca/mg have their own separate 3-element `newReagent`
+  array, so it isn't simply "one slot per reagent") is still unconfirmed
+  — don't build against `resetTime` specifically until that's pinned
+  down, but `lastCal` itself is solid. **Attempted to pin the slot
+  mapping down further (2026-09-10) using our own DB** (which only goes
+  back to 2026-09-03, so only the Sept 3 event is checkable — Aug 25 and
+  Sept 1 predate our own history): at the exact `lastCal` instant,
+  `alk`/`ca`/`mg` **all three** landed simultaneously on values matching
+  `targetAlk`/`targetCa`/`targetMg` exactly (8.13/443/1325). Calibration
+  is a whole-instrument event, not per-probe — this one event can't
+  isolate which `reset` slot moved, since all three metrics moved
+  together. **Asked the user directly (2026-09-10) what actually happened
+  on Sept 3, rather than guessing further from data alone:** they change
+  one reagent bottle at a time, and confirmed the Sept 3 13:05:14
+  `resetTime` corresponds to swapping **Ca reagent B**, followed
+  separately ~8h later by a manual calibration (the whole-instrument
+  `cal`/`lastCal` event above — a distinct, occasional action, not run on
+  every reagent swap, which is why it explains the simultaneous
+  alk/ca/mg shift without contradicting `reset` being per-reagent). This
+  pins one concrete (event, slot-affected) data point, but not which of
+  the 5 array indices moved — no live before/after diff was captured, only
+  the timestamp. Plausible **unverified hypothesis**: Trident alk tests
+  use 1 reagent bottle, ca and mg each use 2 (A/B) — 1+2+2=5, matching the
+  array length — but this is recalled general Trident hardware knowledge,
+  not something confirmed against this app's own captured data. Building
+  a real index-to-reagent map needs either a live devtools capture of the
+  array during a future reset action, or triangulating several more
+  known single-reagent-change events the way this one was resolved.
 - `GET /api/apex/:controller_id/ilog?days=N` — continuous sensor history
   (~10-min interval): pH, temp, ORP, conductivity, output amps/watts/volts.
   Capped around 1000 entries (`days=7` hits it). **Does not include Trident
@@ -146,19 +200,62 @@ API. `apexfusion.com`, all endpoints require the session cookies from
 - **Not yet found:** the write/control endpoint for toggling an outlet.
 
 Real numbers observed 2026-08-18: alk trended down over ~36h (8.01 → 7.66 →
-7.60 dKH). Not yet resolved / explicitly undecided — don't invent an answer:
-- **Target/band values.** User's stated target is 8 dKH; the Trident's own
-  onboard config (`config.modules`, `TRI_10`) has `targetAlk: 8.5` — flagged
-  discrepancy, not reconciled (probably doesn't matter since our decision
-  logic is independent of the Trident's internal target).
-- **The decision logic is explicitly not a simple threshold.** User's actual
-  manual process factors in the last ~3 readings (trend, not just current
-  value) and the tank's pH — not finalized as an algorithm yet. Trident's
-  spec'd accuracy is ±0.2 dKH; user's observed real-world noise is closer to
-  ±0.4 — relevant to picking a deadband, not yet decided. pH itself now
-  comes from `ilog` (`IntervalMeasurementImporter`) rather than the live
+7.60 dKH).
+
+**Target/band values — now decided.** `TARGET_DKH = 8.0`, `DEADBAND = 0.4`
+(`AlkWatchdogService`), cross-checked against 14+ days of production alk
+history rather than the Trident's own onboard `targetAlk: 8.5` config
+(`config.modules`, `TRI_10`) — that discrepancy is deliberately unreconciled,
+our decision logic doesn't depend on the Trident's internal target.
+
+**`AlkWatchdogService`'s first pass is a deliberately simple single-reading
+threshold check — this is known to be a temporary, narrow first cut, not the
+intended final design.** User's actual manual process factors in more than
+one reading and the tank's pH; the next evolution being discussed
+(2026-09-10, not yet built):
+
+- **A points-based scoring model** ("sus calculator") rather than a rigid
+  if/else chain — score several independent signals (magnitude of rise,
+  trend across ≥3 points, whether the pump's been on during the window as a
+  confidence boost, duration of a sustained low/high reading) and sum them
+  into a tiered response, rather than one rule producing one verdict. Fits
+  cleanly on top of the existing "actions are the verdict, no separate
+  reason field" design — a scored decision just emits whichever action type
+  its tier calls for.
+- **A real negative result, not a guess:** a naive "alk rose >0.4 dKH over
+  6h" rule was checked against the real Aug 25→27 incident data and found
+  too marginal to trust — the actual observed rise was 0.42, only barely
+  past the naive threshold, and the Trident's own spec'd accuracy is ±0.2 —
+  a signal that close to 2x the instrument's own noise floor isn't a
+  confident basis for action alone.
+- **A third action type, not just off/none: requesting an out-of-cycle
+  Trident test.** When a signal is ambiguous/marginal rather than clearly
+  actionable, "ask the Trident to retest sooner" (rather than immediately
+  acting on weak data, or silently waiting up to ~3h for whatever the next
+  scheduled reading happens to be) gets a confident decision sooner. This
+  needs a **new, not-yet-found Apex write capability** — triggering an
+  on-demand Trident test — a separate unknown from the outlet-toggle
+  endpoint, never reverse-engineered, don't assume it exists without
+  checking.
+- **Investigated (2026-09-10), inconclusive — "does the Trident retest
+  itself on low confidence" hypothesis, still just n=2.** Full history
+  (133 readings, Aug 25 → today) has 7 instances of two alk tests landing
+  under 100 min apart (normal cadence: median 174.6 min). The original 2
+  (both during the real incident: Aug 25 19:20→20:03, confidence 0.9637→
+  0.9879; Aug 26 00:36→01:10, confidence 0.9741→0.9933) still cleanly fit
+  "a lower-confidence reading is followed shortly by a meaningfully
+  higher-confidence one." The other 5 don't add support — they cluster
+  entirely inside the Sept 3 window already flagged above as a likely
+  reagent/calibration event, not ordinary operation, and *within* that
+  cluster the pattern is inconsistent (one instance is a *high*-confidence
+  0.9882 reading triggering an early retest; another is two readings 6
+  seconds apart with zero confidence change). Net: real pattern in the 2
+  original instances, not strengthened by the wider search — treat as
+  still-open, not confirmed, and don't design anything around it yet.
+- pH comes from `ilog` (`IntervalMeasurementImporter`) rather than the live
   status snapshot, so pH history is already being captured — this was an
-  open question, now resolved and built.
+  open question, now resolved and built, but not yet factored into any
+  decision logic.
 - **LLS (level sensor) for the RODI reservoir feeding the kalk stirrer —
   not built yet, sensor isn't physically in place.** User has one LLS,
   currently in the sump (`did` `5_P3`, name `TZ_LLS` as of 2026-08-18) but

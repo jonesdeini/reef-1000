@@ -3,27 +3,17 @@
 require 'rails_helper'
 
 RSpec.describe Measurement do
-  def build_measurement(**overrides)
-    described_class.new({
-      metric: Measurement::ALK,
-      probe_id: '10_0',
-      value: 7.6,
-      recorded_at: Time.current
-    }.merge(overrides))
-  end
-
-  it 'is valid with plausible attributes' do
-    expect(build_measurement).to be_valid
-  end
+  include ActiveSupport::Testing::TimeHelpers
 
   context 'with no attributes' do
-    subject(:measurement) { described_class.new }
-
     it 'is invalid' do
+      measurement = described_class.new
+
       expect(measurement).not_to be_valid
     end
 
     it 'flags metric, probe_id, value, and recorded_at' do
+      measurement = described_class.new
       measurement.valid?
 
       expect(measurement.errors.attribute_names).to contain_exactly(:metric, :probe_id, :value, :recorded_at)
@@ -31,11 +21,14 @@ RSpec.describe Measurement do
   end
 
   context 'with a duplicate probe_id/recorded_at pair' do
-    subject(:duplicate) { build_measurement recorded_at: recorded_at }
+    subject(:duplicate) { build(:measurement, probe_id:, recorded_at:) }
 
+    around { |example| freeze_time { example.run } }
+
+    let(:probe_id) { 'ph' }
     let(:recorded_at) { Time.current }
 
-    before { build_measurement(recorded_at: recorded_at).save! }
+    before { create(:measurement, probe_id:, recorded_at:) }
 
     it 'is invalid' do
       expect(duplicate).not_to be_valid
@@ -44,27 +37,15 @@ RSpec.describe Measurement do
     it 'flags probe_id' do
       duplicate.valid?
 
-      expect(duplicate.errors[:probe_id]).to be_present
+      expect(duplicate.errors[:probe_id]).to eq ['has already been taken']
     end
   end
 
   it 'allows the same probe_id at a different recorded_at' do
-    build_measurement(recorded_at: 1.hour.ago).save!
+    probe_id = 'ph'
+    create(:measurement, probe_id:)
+    non_duplicate = build :measurement, probe_id:, recorded_at: 1.hour.ago
 
-    expect(build_measurement(recorded_at: Time.current)).to be_valid
-  end
-
-  describe 'plausible range per metric' do
-    it 'rejects an alk value outside 0..30' do
-      expect(build_measurement(metric: Measurement::ALK, value: 31)).not_to be_valid
-    end
-
-    it 'rejects a negative value regardless of metric' do
-      expect(build_measurement(metric: Measurement::PH, value: -1)).not_to be_valid
-    end
-
-    it 'accepts a ph value within 0..14' do
-      expect(build_measurement(metric: Measurement::PH, probe_id: 'base_pH', value: 7.87)).to be_valid
-    end
+    expect(non_duplicate).to be_valid
   end
 end

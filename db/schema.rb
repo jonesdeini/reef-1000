@@ -10,9 +10,26 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_08_19_013302) do
+ActiveRecord::Schema[8.0].define(version: 2026_09_09_183224) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "decisions", force: :cascade do |t|
+    t.jsonb "action", default: {}, null: false
+    t.datetime "executed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "decisions_measurements", force: :cascade do |t|
+    t.bigint "decision_id", null: false
+    t.bigint "measurement_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["decision_id", "measurement_id"], name: "index_decisions_measurements_on_decision_id_and_measurement_id", unique: true
+    t.index ["decision_id"], name: "index_decisions_measurements_on_decision_id"
+    t.index ["measurement_id"], name: "index_decisions_measurements_on_measurement_id"
+  end
 
   create_table "measurements", force: :cascade do |t|
     t.string "metric", null: false
@@ -25,4 +42,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_19_013302) do
     t.index ["metric", "recorded_at"], name: "index_measurements_on_metric_and_recorded_at"
     t.index ["probe_id", "recorded_at"], name: "index_measurements_on_probe_id_and_recorded_at", unique: true
   end
+
+  add_foreign_key "decisions_measurements", "decisions"
+  add_foreign_key "decisions_measurements", "measurements"
 end
