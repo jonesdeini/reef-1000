@@ -323,6 +323,7 @@ GEM
       rexml (~> 3.2, >= 3.2.5)
       rubyzip (>= 1.2.2, < 4.0)
       websocket (~> 1.0)
+    simplecov (1.3.0)
     solid_queue (1.6.0)
       activejob (>= 7.1)
       activerecord (>= 7.1)
@@ -383,6 +384,7 @@ DEPENDENCIES
   rubocop-rails
   rubocop-rspec
   selenium-webdriver
+  simplecov
   solid_queue
   tzinfo-data
   webmock

@@ -34,3 +34,6 @@
 
 # Postgres data directory bind-mounted by docker-compose.
 /postgres_data
+
+# SimpleCov output.
+/coverage
