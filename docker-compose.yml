@@ -56,4 +56,4 @@ services:
       - /mnt/user/reefff/reef-1000:/mnt/user/reefff/reef-1000
     working_dir: /mnt/user/reefff/reef-1000
     entrypoint: sh
-    command: -c 'while true; do docker compose pull --quiet && docker compose up -d && docker image prune -f; sleep 300; done'
+    command: -c 'while true; do docker compose pull --quiet web jobs postgres && docker compose up -d web jobs postgres && docker image prune -f; sleep 300; done'
