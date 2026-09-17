@@ -56,6 +56,7 @@ jobs:
       PGHOST: localhost
       PGUSER: postgres
       PGPASSWORD: postgres
+      DISABLE_BOOTSNAP: true
 
     steps:
       - name: Checkout code
@@ -71,6 +72,13 @@ jobs:
 
       - name: Run tests
         run: bundle exec rspec
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
 
   build_and_push:
     needs: [ scan_ruby, lint, test ]
