@@ -162,3 +162,18 @@ the app's own architecture and safety principles.
   `"#{outlet_name}A"`/`"#{outlet_name}W"` (e.g. `kalkStirPumpA`/`...W`,
   `RO_TO_DI_6A`/`...W`). Not something anyone configures; automatic.
 - **Not yet found:** the write/control endpoint for toggling an outlet.
+- **Found (2026-09-22): on-demand Trident test trigger.** `PUT
+  /api/apex/:controller_id/status/outputs/10_4` — confirmed live, triggered
+  one real alkalinity-only test via the Fusion UI's Trident widget gear icon
+  -> "Start Test" -> "Alkalinity" (its sibling "Combined" option is
+  presumably `10_3`, name `Trident_10_3`, `ID 42` - not tested, don't assume
+  the same body shape without checking). `10_4` itself is a `type:
+  "selector"` virtual output, `name: "Alk_10_4"`, `ID 43`, distinct from the
+  three reading `did`s (`10_0`/`10_1`/`10_2`). **Exact request body not
+  captured** (network capture tool only returned method/URL/status, not
+  payload) - only the endpoint, method, and did are confirmed. The write
+  itself is a momentary trigger, not a stateful toggle: the output's own
+  `status` stays `["AOF", "", "OK", ""]` throughout, while the real
+  in-progress signal is `status.modules[].extra.status` on the Trident
+  module (`abaddr: 10`) flipping from `"idle"` to `"testing Alk"` within
+  ~15s of the PUT succeeding.
