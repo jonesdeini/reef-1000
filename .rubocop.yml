@@ -2,8 +2,8 @@ AllCops:
   NewCops: enable
 
 plugins:
+  - rubocop-minitest
   - rubocop-rails
-  - rubocop-rspec
 
 Style/MethodCallWithArgsParentheses:
   Enabled: true
@@ -18,4 +18,8 @@ Layout/EmptyLinesAroundClassBody:
 
 Metrics/BlockLength:
   Exclude:
-    - 'spec/**/*'
+    - 'test/**/*'
+
+Metrics/ClassLength:
+  Exclude:
+    - 'test/**/*'

@@ -1,11 +1,12 @@
 # frozen_string_literal: true
 
-require 'rails_helper'
+require 'test_helper'
 
-RSpec.describe 'AlkWatchdogService backtest against the real 2026-08-25 incident', type: :system do
+class AlkWatchdogBacktestTest < ActiveSupport::TestCase
+
   include ActiveSupport::Testing::TimeHelpers
 
-  before do
+  setup do
     [
       [Time.utc(2026, 8, 25, 19, 20, 42), 7.17, 0.9637],
       [Time.utc(2026, 8, 25, 20, 3, 32), 7.09, 0.9879],
@@ -33,9 +34,10 @@ RSpec.describe 'AlkWatchdogService backtest against the real 2026-08-25 incident
     ]
   end
 
-  it 'commands the pump off once enough real, rising trends have accumulated' do
+  test 'commands the pump off once enough real, rising trends have accumulated' do
     call_times.each { |call_time| travel_to(call_time) { AlkWatchdogService.call } }
 
-    expect(Decision.last.actions).to eq([{ 'kalk_pump' => 'off' }])
+    assert_equal [{ 'kalk_pump' => 'off' }], Decision.last.actions
   end
+
 end
