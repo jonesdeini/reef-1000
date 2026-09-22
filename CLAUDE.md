@@ -17,6 +17,19 @@ counter-pull is to also avoid *under*-building (e.g. hardcoding a value that
 obviously wants to be config) — aim for tasteful middle ground, not either
 extreme.
 
+**Physical kalk stirrer setup** (never captured before 2026-09-22, confirmed
+directly with the user rather than assumed): an Avast Marine Works kalk
+reactor, ~4L (their larger model — no longer listed on their site), fed from
+a 29-gallon RODI reservoir by a Kamoer peristaltic pump. That peristaltic
+pump *is* `kalkStirPump` (Apex outlet `ID 16`) — Apex can only toggle it
+on/off, not adjust its rate; the flow rate itself is set manually on the
+pump. The reactor drains directly into the sump (no separate dosing pump),
+so the feed rate directly controls kalkwasser delivery — turning the pump
+off stops kalk reaching the tank entirely, not just refilling the reactor.
+The reactor's own internal stirring motor is a **separate component with no
+Apex control at all** — it just runs continuously, 24/7, regardless of what
+this system does.
+
 ## Architecture
 
 **Apex integration** (`app/services/`):
