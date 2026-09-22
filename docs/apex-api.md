@@ -162,3 +162,33 @@ the app's own architecture and safety principles.
   `"#{outlet_name}A"`/`"#{outlet_name}W"` (e.g. `kalkStirPumpA`/`...W`,
   `RO_TO_DI_6A`/`...W`). Not something anyone configures; automatic.
 - **Not yet found:** the write/control endpoint for toggling an outlet.
+- **Found (2026-09-22): on-demand Trident test trigger, full request/response
+  captured.** `PUT /api/apex/:controller_id/status/outputs/10_4` — confirmed
+  live twice: once triggered directly (network capture only returned
+  method/URL/status, no body), once by the user via their own browser
+  devtools to get the exact payload. `10_4` is a `type: "selector"` virtual
+  output, `name: "Alk_10_4"`, `ID 43`, distinct from the three reading
+  `did`s (`10_0`/`10_1`/`10_2`). Its sibling "Combined" option in the same
+  Fusion UI menu (Trident widget gear icon -> "Start Test") is presumably
+  `10_3`, name `Trident_10_3`, `ID 42` — not tested, don't assume the same
+  body shape without checking.
+
+  Request body (**full resource replace, not a minimal patch** — the same
+  shape the live status GET returns for this output, just with `status[0]`
+  flipped):
+  ```json
+  {"did":"10_4","gid":"","name":"Alk_10_4","type":"selector","ID":43,"status":["ON","","OK",""]}
+  ```
+  This pattern — fetch the live output object, PUT it back with just the
+  desired `status[0]` changed — is a strong hint for how outlet writes
+  (`type: "outlet"`, e.g. `kalkStirPump`) likely work too, though `selector`
+  and `outlet` are different `type`s and this isn't confirmed for `outlet`
+  without its own real capture.
+
+  The write is a momentary trigger, not a stateful toggle: the output's own
+  `status` stays `["AOF", "", "OK", ""]` throughout (confirmed - it never
+  flips to `"ON"` even mid-test), while the real in-progress signal is
+  `status.modules[].extra.status` on the Trident module (`abaddr: 10`)
+  flipping from `"idle"` to `"testing Alk"` within ~15s of the PUT
+  succeeding, back to `"idle"` once the test completes (~10min later, in
+  line with normal completion latency).
