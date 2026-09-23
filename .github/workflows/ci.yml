@@ -80,8 +80,27 @@ jobs:
           name: coverage-report
           path: coverage/
 
+  coverage:
+    needs: [ test ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download coverage report
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+
+      - name: Check coverage threshold
+        run: |
+          line=$(jq -r '.total.lines.percent' coverage/coverage.json)
+          echo "Line coverage: ${line}%"
+          awk -v cov="$line" 'BEGIN { exit !(cov >= 100) }' || {
+            echo "::error::Line coverage ${line}% is below the required 100%"
+            exit 1
+          }
+
   build_and_push:
-    needs: [ scan_ruby, lint, test ]
+    needs: [ scan_ruby, lint, test, coverage ]
     if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
