@@ -126,6 +126,44 @@ the app's own architecture and safety principles.
     slots 0/1 never fired in our whole observed history, slot 2 (Sept 1)
     still unidentified (plausibly Mg/Reagent C, unconfirmed — no known
     single-Mg-swap event to correlate against yet).
+- **Slot 2 confirmed as Mg/Reagent C (2026-10-01), by elimination from a
+  real all-three-reagents swap.** User changed all three reagent bottles
+  (A/alk, B/ca, C/mg) within a day or two of each other, last one being B,
+  then ran a whole-instrument calibration the same night
+  (`lastCal: 1790825422` → 2026-09-30 23:30:22 Eastern). `resetTime`
+  landed as: slot 4 (confirmed Alk/A) = 2026-09-29 23:57:52, slot 2
+  (previously unidentified) = 2026-09-30 15:02:20, slot 3 (confirmed
+  Ca/B) = 2026-09-30 20:07:07 — latest, matching "B changed last." Slot 2
+  is the only one of the three left, so it's Mg/Reagent C. All 5 slots are
+  now identified: 0/1 never fired, 2 = Mg, 3 = Ca, 4 = Alk.
+- **Second confirmed instance of the calibration discontinuity signature
+  (2026-10-01), same shape as Sept 3.** `tlog` around the same
+  2026-09-30 23:30:22 Eastern `lastCal` instant:
+
+  ```
+  23:30:17  alk  8.44  confidence 0.9888
+  23:30:23  alk  8.13  confidence 0.9888   <- lastCal is 23:30:22
+  23:30:23  ca   443   confidence 0.9938
+  23:30:23  mg   1325  confidence 0.9969
+  ```
+
+  Alk/ca/mg again land simultaneously on the live `targetAlk`/`targetCa`/
+  `targetMg` (8.13/443/1325) 6 seconds after the prior alk reading, same
+  gap as Sept 3. The two alk readings also share an *identical* confidence
+  value (0.9888) despite being 6s apart — a real independent test
+  wouldn't reproduce confidence to 4 decimal places, reinforcing that the
+  second entry is the calibration overwrite, not a second test. In the
+  ~25 minutes before calibration there's also a cluster of 4 readings
+  tighter than the normal ~3h cadence (23:06:32, 23:11:13, 23:25:33,
+  23:30:17) — plausibly the calibration procedure itself running tests,
+  a cleaner explanation than "Trident retests on low confidence" (see
+  `CLAUDE.md`'s still-open note on that).
+  **User's observation, not yet explained:** alk usually does *not* land
+  on `targetAlk` during a calibration the way ca/mg do — this time it did.
+  Both confirmed instances where alk lined up (Sept 3, Sept 30) happened
+  to also be instances where all three reagents were swapped close
+  together; no confirmed causal link yet, just noted for the next
+  calibration event to check against.
 - `GET /api/apex/:controller_id/ilog?days=N` — continuous sensor history
   (~10-min interval): pH, temp, ORP, conductivity, output amps/watts/volts.
   Capped around 1000 entries (`days=7` hits it). **Does not include Trident
