@@ -21,6 +21,15 @@ class ApexClient
         .to_s
   end
 
+  def put(path, body)
+    HTTP.timeout(30)
+        .follow
+        .cookies(cookies)
+        .put(path, body:)
+        .body
+        .to_s
+  end
+
   def base_path
     "https://apexfusion.com/api/apex/#{Rails.application.config.x.apex.controller_id}"
   end
