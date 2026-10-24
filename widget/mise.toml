@@ -1,0 +1,3 @@
+# No [tools] entry for node here on purpose — mise auto-detects the sibling .node-version file
+# (same idiomatic-version-file support as .ruby-version/.nvmrc), so that file is the single
+# source of truth both mise and CI read, rather than two independently-resolved "lts" lookups.

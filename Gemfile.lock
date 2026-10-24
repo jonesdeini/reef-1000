@@ -1,3 +1,24 @@
+GIT
+  remote: https://github.com/rswag/rswag.git
+  revision: 4a2885f180dc18689a898395b1aa550c0c22591a
+  branch: master
+  specs:
+    rswag (0.0.0)
+      rswag-api (= 0.0.0)
+      rswag-specs (= 0.0.0)
+      rswag-ui (= 0.0.0)
+    rswag-api (0.0.0)
+      activesupport (>= 5.2, < 8.2)
+      railties (>= 5.2, < 8.2)
+    rswag-specs (0.0.0)
+      activesupport (>= 5.2, < 8.2)
+      json-schema (>= 2.2, < 7.0)
+      railties (>= 5.2, < 8.2)
+      rspec-core (>= 3.12)
+    rswag-ui (0.0.0)
+      actionpack (>= 5.2, < 8.2)
+      railties (>= 5.2, < 8.2)
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -153,6 +174,9 @@ GEM
       rdoc (>= 4.0.0)
       reline (>= 0.4.2)
     json (2.21.2)
+    json-schema (6.2.1)
+      addressable (~> 2.8)
+      bigdecimal (>= 3.1, < 5)
     language_server-protocol (3.17.0.6)
     lint_roller (1.1.0)
     llhttp-ffi (0.5.1)
@@ -380,6 +404,7 @@ DEPENDENCIES
   puma (>= 5.0)
   rails (~> 8.0.2)
   rspec-rails
+  rswag!
   rubocop
   rubocop-rails
   rubocop-rspec
@@ -390,7 +415,7 @@ DEPENDENCIES
   webmock
 
 RUBY VERSION
-  ruby 4.0.6p0
+  ruby 4.0.7
 
 BUNDLED WITH
   4.0.18

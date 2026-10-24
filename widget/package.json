@@ -1,0 +1,9 @@
+{
+  "name": "reef-1000-widget",
+  "private": true,
+  "description": "iOS Scriptable widget consuming reef-1000's current-readings endpoint (see issue #23)",
+  "type": "commonjs",
+  "scripts": {
+    "test": "node --test"
+  }
+}
