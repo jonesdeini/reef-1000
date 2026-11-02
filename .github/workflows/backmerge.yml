@@ -1,0 +1,34 @@
+name: Backmerge main into develop
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  backmerge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout develop
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Merge main into develop
+        run: |
+          git fetch origin main
+          if git merge origin/main --no-edit; then
+            git push origin develop
+          else
+            echo "::error::Backmerge of main into develop has conflicts - resolve manually (git checkout develop && git merge origin/main)"
+            exit 1
+          fi
