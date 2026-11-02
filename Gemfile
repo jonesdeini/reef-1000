@@ -10,6 +10,8 @@ gem 'http'
 gem 'pg', '~> 1.1'
 gem 'puma', '>= 5.0'
 gem 'rails', '~> 8.0.2'
+gem 'sentry-rails', '~> 7.2'
+gem 'sentry-ruby', '~> 7.2'
 gem 'solid_queue'
 gem 'tzinfo-data'
 
