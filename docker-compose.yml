@@ -30,6 +30,7 @@ services:
       APEX_FUSION_PASSWORD: ${APEX_FUSION_PASSWORD}
       APEX_CONTROLLER_ID: ${APEX_CONTROLLER_ID}
       APEX_KALK_PUMP_OUTPUT_NAME: ${APEX_KALK_PUMP_OUTPUT_NAME}
+      SENTRY_DSN: ${SENTRY_DSN}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/up"]
       interval: 10s
